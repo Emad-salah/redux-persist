@@ -53,6 +53,7 @@ export default function persistReducer<State: Object, Action: Object>(
   let _persistoid = null
   let _purge = false
   let _paused = true
+  let _sealed = false
   const conditionalUpdate = state => {
     // update the persistoid only if we are rehydrated and not paused
     state._persist.rehydrated &&
@@ -69,7 +70,7 @@ export default function persistReducer<State: Object, Action: Object>(
     let timer: TimeoutID
 
     if (action.type === PERSIST) {
-      let _sealed = false
+      _sealed = false
       let _rehydrate = (payload, err) => {
         // dev warning if we are already sealed
         if (process.env.NODE_ENV !== 'production' && _sealed)
@@ -83,7 +84,9 @@ export default function persistReducer<State: Object, Action: Object>(
 
         // only rehydrate if we are not already sealed
         if (!_sealed) {
-          action.rehydrate(config.key, payload, err)
+          if (payload !== undefined || !err) {
+            action.rehydrate(config.key, payload, err)
+          }
           _sealed = true
           clearTimeout(timer)
         }
